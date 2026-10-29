@@ -1,0 +1,61 @@
+fullnameOverride: delivery
+
+aws:
+  region: us-east-1
+  # Set this only for LocalStack or another AWS-compatible endpoint.
+  endpointUrl: ""
+  accessKeyId: ""
+  secretAccessKey: ""
+
+# In-cluster Postgres is for a local kind cluster. Production uses RDS.
+postgres:
+  enabled: false
+  image: postgres:16-alpine
+  user: orders
+  password: orders
+  database: orders
+
+orders:
+  replicaCount: 1
+  image:
+    repository: orders-service
+    tag: local
+    pullPolicy: IfNotPresent
+  service:
+    port: 3001
+  serviceAccount:
+    name: orders
+    annotations: {}
+  databaseUrl: postgres://orders:orders@postgres:5432/orders
+  snsTopicArn: arn:aws:sns:us-east-1:000000000000:order-created
+  logLevel: info
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+fulfillment:
+  replicaCount: 1
+  image:
+    repository: fulfillment-service
+    tag: local
+    pullPolicy: IfNotPresent
+  service:
+    port: 8000
+  serviceAccount:
+    name: fulfillment
+    annotations: {}
+  sqsQueueUrl: ""
+  dynamodbTable: fulfillments
+  consumerEnabled: true
+  pollWaitSeconds: 2
+  visibilityTimeoutSeconds: 30
+  logLevel: info
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi

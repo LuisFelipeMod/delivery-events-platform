@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.fulfillment.serviceAccount.name }}
+  labels:
+    {{- include "delivery.fulfillment.labels" . | nindent 4 }}
+  {{- with .Values.fulfillment.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "delivery.fullname" . }}-fulfillment
+  labels:
+    {{- include "delivery.fulfillment.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "delivery.fulfillment.selector" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.fulfillment.service.port }}
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "delivery.fullname" . }}-fulfillment
+  labels:
+    {{- include "delivery.fulfillment.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.fulfillment.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "delivery.fulfillment.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "delivery.fulfillment.selector" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.fulfillment.serviceAccount.name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: fulfillment
+          image: "{{ .Values.fulfillment.image.repository }}:{{ .Values.fulfillment.image.tag }}"
+          imagePullPolicy: {{ .Values.fulfillment.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.fulfillment.service.port }}
+          env:
+            - name: AWS_REGION
+              value: {{ .Values.aws.region | quote }}
+            - name: SQS_QUEUE_URL
+              value: {{ .Values.fulfillment.sqsQueueUrl | quote }}
+            - name: DYNAMODB_TABLE
+              value: {{ .Values.fulfillment.dynamodbTable | quote }}
+            - name: CONSUMER_ENABLED
+              value: {{ .Values.fulfillment.consumerEnabled | quote }}
+            - name: POLL_WAIT_SECONDS
+              value: {{ .Values.fulfillment.pollWaitSeconds | quote }}
+            - name: VISIBILITY_TIMEOUT_SECONDS
+              value: {{ .Values.fulfillment.visibilityTimeoutSeconds | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.fulfillment.logLevel | quote }}
+            {{- if .Values.aws.endpointUrl }}
+            - name: AWS_ENDPOINT_URL
+              value: {{ .Values.aws.endpointUrl | quote }}
+            - name: AWS_ACCESS_KEY_ID
+              value: {{ .Values.aws.accessKeyId | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              value: {{ .Values.aws.secretAccessKey | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.fulfillment.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

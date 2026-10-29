@@ -1,0 +1,12 @@
+Release {{ .Release.Name }} installed.
+
+Orders:        {{ include "delivery.fullname" . }}-orders:{{ .Values.orders.service.port }}
+Fulfillment:   {{ include "delivery.fullname" . }}-fulfillment:{{ .Values.fulfillment.service.port }}
+
+Port-forward:
+
+  kubectl port-forward svc/{{ include "delivery.fullname" . }}-orders {{ .Values.orders.service.port }}:{{ .Values.orders.service.port }}
+  kubectl port-forward svc/{{ include "delivery.fullname" . }}-fulfillment {{ .Values.fulfillment.service.port }}:{{ .Values.fulfillment.service.port }}
+
+The chart does not create AWS resources. SNS, SQS, DynamoDB, and RDS come from Terraform, or from LocalStack when you run docker compose.
+Service account names are `{{ .Values.orders.serviceAccount.name }}` and `{{ .Values.fulfillment.serviceAccount.name }}`. Those names are what the Terraform IRSA trust policies expect in the namespace you install into.
