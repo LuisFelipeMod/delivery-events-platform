@@ -1,0 +1,19 @@
+# Local kind overlay. Postgres runs in the cluster. The SQS consumer is off
+# because kind does not include LocalStack; use docker compose to exercise
+# the event path. Point fulfillment at a real queue before enabling it.
+postgres:
+  enabled: true
+
+orders:
+  image:
+    repository: orders-service
+    tag: local
+    pullPolicy: IfNotPresent
+
+fulfillment:
+  image:
+    repository: fulfillment-service
+    tag: local
+    pullPolicy: IfNotPresent
+  consumerEnabled: false
+  sqsQueueUrl: ""

@@ -1,0 +1,43 @@
+[project]
+name = "fulfillment-service"
+version = "0.1.0"
+description = "Consumes order.created from SQS and stores fulfillment status in DynamoDB."
+requires-python = ">=3.12"
+dependencies = [
+  "boto3>=1.35",
+  "fastapi>=0.115",
+  "pydantic-settings>=2.6",
+  "uvicorn>=0.32",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.27",
+  "moto[dynamodb,sqs]>=5.0",
+  "pytest>=8.3",
+  "ruff>=0.8",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+filterwarnings = [
+  "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["fulfillment"]
