@@ -1,0 +1,15 @@
+---
+description: Conventions for the delivery-events-platform sample
+alwaysApply: true
+---
+
+# Delivery platform conventions
+
+- Read the matching file in `docs/specs/` before changing a component. If behavior changes, update the spec in the same change.
+- Keep two services: `orders-service` (Node.js, TypeScript, Fastify, PostgreSQL, SNS) and `fulfillment-service` (Python, FastAPI, SQS, DynamoDB). Do not add a third service or a shared library.
+- Integrate the services only through the `order.created` event in `docs/specs/event-contract.md`.
+- Fulfillment processing is idempotent on `order.id`. Do not delete an SQS message that failed; the queue redrive policy moves it to the DLQ.
+- Use parameterized SQL. Do not log secrets or commit real AWS credentials.
+- Do not run `terraform apply`. Validation is `terraform fmt` and `terraform validate`.
+- Add or update a unit test for behavior changes. Do not require LocalStack for unit tests.
+- Match the local style: TypeScript strict ESM with `.js` import suffixes, Python 3.12 type hints, small modules.
